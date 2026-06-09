@@ -158,6 +158,20 @@ Visit <https://docs.dify.ai> to view the full documentation.
 
 The Dify community can be found on [Discord community], where you can ask questions, voice ideas, and share your projects.
 
+## Footer Configuration
+
+You can customize the Apps page footer by editing `web/public/footer.conf`.
+
+Supported fields:
+
+- `text`: footer body text
+- `links`: footer link array (`label` + `url`)
+- `copyright`: copyright text
+- `backgroundColor`: footer background color (CSS color value)
+- `textColor`: footer text color (CSS color value)
+
+The file is loaded at runtime from `/footer.conf`, so it works in both development and production builds.
+
 [Corepack]: https://github.com/nodejs/corepack#readme
 [Discord community]: https://discord.gg/5AEfbxcd9k
 [Lint Documentation]: ./docs/lint.md

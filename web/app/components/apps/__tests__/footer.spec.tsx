@@ -1,10 +1,18 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import * as React from 'react'
 import Footer from '../footer'
 
 describe('Footer', () => {
+  let fetchMock: ReturnType<typeof vi.fn>
+
   beforeEach(() => {
     vi.clearAllMocks()
+    fetchMock = vi.fn().mockResolvedValue({ ok: false })
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   describe('Rendering', () => {
@@ -73,11 +81,62 @@ describe('Footer', () => {
     })
   })
 
-  describe('Icons', () => {
-    it('should render icons within links', () => {
+  describe('Config Loading', () => {
+    it('should load footer.conf with the expected path', async () => {
+      render(<Footer />)
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith('/footer.conf')
+      })
+    })
+
+    it('should render custom config values when footer.conf is valid', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          text: 'Custom footer text',
+          links: [{ label: 'Docs', url: 'https://docs.example.com' }],
+          copyright: '© 2026 Example',
+          backgroundColor: '#111111',
+          textColor: '#f5f5f5',
+        }),
+      })
+
       const { container } = render(<Footer />)
-      const svgElements = container.querySelectorAll('svg')
-      expect(svgElements.length).toBeGreaterThanOrEqual(3)
+
+      await waitFor(() => {
+        expect(screen.getByText('Custom footer text')).toBeInTheDocument()
+      })
+
+      const customLink = container.querySelector('a[href="https://docs.example.com"]')
+      expect(customLink).toBeInTheDocument()
+      expect(screen.getByText('© 2026 Example')).toBeInTheDocument()
+
+      const footer = screen.getByRole('contentinfo')
+      expect(footer).toHaveStyle({ backgroundColor: '#111111' })
+      expect(screen.getByText('Custom footer text')).toHaveStyle({ color: '#f5f5f5' })
+    })
+
+    it('should fallback to default values when footer.conf format is invalid', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          text: 123,
+          links: [{ label: 'Broken' }],
+          copyright: false,
+          backgroundColor: [],
+          textColor: {},
+        }),
+      })
+
+      const { container } = render(<Footer />)
+
+      await waitFor(() => {
+        expect(screen.getByText('app.communityIntro')).toBeInTheDocument()
+      })
+
+      const githubLink = container.querySelector('a[href="https://github.com/langgenius/dify"]')
+      expect(githubLink).toBeInTheDocument()
     })
   })
 
